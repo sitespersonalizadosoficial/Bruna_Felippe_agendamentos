@@ -1141,9 +1141,9 @@
         <span x-text="toast.message"></span>
     </div>
 
+
 <script>
-    <!-- ================= LÓGICA DA APLICAÇÃO (ALPINE.JS + SUPABASE) ================= -->
-   function supabaseBookingApp() {
+    function supabaseBookingApp() {
     return {
         currentView: 'booking',
         step: 1,
@@ -1711,7 +1711,7 @@ ADD COLUMN IF NOT EXISTS observacoes TEXT DEFAULT '';`,
                     : { available: false, reason: 'Ocupado' };
             }
 
-            // 3. Combo (Make + Cabelo) - Testa automático sem a cliente precisar escolher ordem
+            // 3. Combo (Make + Cabelo) - Prioridade 1: Make primeiro, depois Cabelo
             if (srv.agenda === 'combo') {
                 const mDur = Number(srv.makeMinutes);
                 const cDur = Number(srv.cabeloMinutes);
@@ -1719,28 +1719,28 @@ ADD COLUMN IF NOT EXISTS observacoes TEXT DEFAULT '';`,
 
                 if (totalEnd > closingMinutes) return { available: false, reason: 'Sem tempo' };
 
-                // Prioridade 1: Cabelo primeiro, depois Make
-                const cabeloEnd1 = start + cDur;
-                if (this.isRangeFree(cabeloBookings, start, cabeloEnd1) && this.isRangeFree(makeBookings, cabeloEnd1, totalEnd)) {
+                // Prioridade 1: Make primeiro, depois Cabelo
+                const makeEnd1 = start + mDur;
+                if (this.isRangeFree(makeBookings, start, makeEnd1) && this.isRangeFree(cabeloBookings, makeEnd1, totalEnd)) {
                     return {
                         available: true,
                         reason: `até ${this.minutesToTime(totalEnd)}`,
                         blocks: [
-                            { agenda: 'cabelo', start: start, end: cabeloEnd1 },
-                            { agenda: 'make', start: cabeloEnd1, end: totalEnd }
+                            { agenda: 'make', start: start, end: makeEnd1 },
+                            { agenda: 'cabelo', start: makeEnd1, end: totalEnd }
                         ]
                     };
                 }
 
-                // Prioridade 2: Make primeiro, depois Cabelo
-                const makeEnd2 = start + mDur;
-                if (this.isRangeFree(makeBookings, start, makeEnd2) && this.isRangeFree(cabeloBookings, makeEnd2, totalEnd)) {
+                // Prioridade 2 (alternativa se a make estiver ocupada no 1º horário): Cabelo primeiro, depois Make
+                const cabeloEnd2 = start + cDur;
+                if (this.isRangeFree(cabeloBookings, start, cabeloEnd2) && this.isRangeFree(makeBookings, cabeloEnd2, totalEnd)) {
                     return {
                         available: true,
                         reason: `até ${this.minutesToTime(totalEnd)}`,
                         blocks: [
-                            { agenda: 'make', start: start, end: makeEnd2 },
-                            { agenda: 'cabelo', start: makeEnd2, end: totalEnd }
+                            { agenda: 'cabelo', start: start, end: cabeloEnd2 },
+                            { agenda: 'make', start: cabeloEnd2, end: totalEnd }
                         ]
                     };
                 }
