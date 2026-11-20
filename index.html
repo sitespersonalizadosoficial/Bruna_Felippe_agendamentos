@@ -89,7 +89,6 @@
                         class="w-full h-full object-cover rounded-full transition-transform duration-300 group-hover:scale-105"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                     />
-                    
                 </div>
                 <div>
                     <span class="block text-xl font-bold tracking-tight text-pink-900 leading-none serif-title">
@@ -250,7 +249,6 @@
                                         <i class="fa-regular fa-circle-info"></i> Detalhes
                                     </button>
 
-                                    <!-- BOTÃO COM COR ROSA ESCURA E CONTRASTE COM TEXTO BRANCO -->
                                     <span 
                                         :class="selectedService?.id === service.id ? 'bg-pink-700 text-white shadow' : 'bg-pink-200 text-pink-950 group-hover:bg-pink-600 group-hover:text-white'"
                                         class="text-xs px-3.5 py-2 rounded-xl font-bold transition-all flex items-center gap-1 shadow-sm">
@@ -395,18 +393,6 @@
                                             </div>
                                         </template>
 
-                                        <template x-if="dateBookings.length > 0">
-                                            <div class="bg-pink-100/70 border border-pink-300 rounded-xl p-3 text-[11px] text-pink-950">
-                                                <p class="font-bold mb-1"><i class="fa-regular fa-calendar-xmark text-pink-600"></i> Já reservado neste dia:</p>
-                                                <div class="flex flex-wrap gap-1.5">
-                                                    <template x-for="b in sortedDateBookings" :key="b.id">
-                                                        <span class="px-2 py-0.5 rounded-md bg-white border border-pink-300 font-semibold" x-text="`${b.horario_inicio.slice(0,5)} às ${b.horario_fim.slice(0,5)}`"></span>
-                                                    </template>
-                                                </div>
-                                                <p class="mt-1.5 text-pink-700">Cada horário abaixo mostra quando o seu procedimento terminará.</p>
-                                            </div>
-                                        </template>
-
                                         <div class="grid grid-cols-3 gap-2">
                                             <template x-for="slot in availableSlots" :key="slot">
                                                 <button 
@@ -498,6 +484,16 @@
                                 <p class="font-bold">Resumo do Agendamento:</p>
                                 <p><span class="font-semibold">Procedimento:</span> <span x-text="selectedService?.title"></span></p>
                                 <p><span class="font-semibold">Data & Horário:</span> <span x-text="`${selectedDateFormatted} às ${selectedTime} (até ${calculateEndTime(selectedTime, selectedService?.durationMinutes)})`"></span></p>
+                                
+                                <template x-if="selectedService?.agenda === 'combo' && selectedTime">
+                                    <div class="bg-white/80 p-2 rounded-lg border border-pink-200 my-1.5 text-[11px] text-pink-900">
+                                        <span class="font-bold block text-pink-700">Cronograma do atendimento:</span>
+                                        <template x-for="blk in getSlotStatus(selectedTime).blocks" :key="blk.agenda">
+                                            <span class="block" x-text="`• ${minutesToTime(blk.start)} às ${minutesToTime(blk.end)} — ${blk.agenda === 'make' ? 'Maquiagem' : 'Cabelo / Penteado'}`"></span>
+                                        </template>
+                                    </div>
+                                </template>
+
                                 <p><span class="font-semibold">Valor Base:</span> <span x-text="formatCurrency(selectedService?.price || 0)"></span></p>
                                 <template x-if="hasExtraTax">
                                     <p class="text-pink-900 font-bold"><span class="font-semibold">Taxa de domingos/feriados (+15%):</span> +<span x-text="formatCurrency((selectedService?.price || 0) * 0.15)"></span></p>
@@ -546,9 +542,18 @@
                                     <span class="text-pink-700 text-xs uppercase font-bold">Duração</span>
                                     <span class="font-semibold text-pink-900" x-text="`${selectedService?.durationText}`"></span>
                                 </div>
-                                <div class="py-3 flex justify-between items-center">
+                                <div class="py-3 flex justify-between items-start">
                                     <span class="text-pink-700 text-xs uppercase font-bold">Data & Horário</span>
-                                    <span class="font-bold text-pink-800" x-text="`${selectedDateFormatted} das ${selectedTime} às ${calculateEndTime(selectedTime, selectedService?.durationMinutes)}`"></span>
+                                    <div class="text-right">
+                                        <span class="font-bold text-pink-800 block" x-text="`${selectedDateFormatted} das ${selectedTime} às ${calculateEndTime(selectedTime, selectedService?.durationMinutes)}`"></span>
+                                        <template x-if="selectedService?.agenda === 'combo' && selectedTime">
+                                            <div class="text-[11px] text-pink-700 mt-1">
+                                                <template x-for="blk in getSlotStatus(selectedTime).blocks" :key="blk.agenda">
+                                                    <span class="block" x-text="`${minutesToTime(blk.start)}–${minutesToTime(blk.end)}: ${blk.agenda === 'make' ? 'Make' : 'Cabelo'}`"></span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
                                 </div>
                                 <div class="py-3 flex justify-between items-center">
                                     <span class="text-pink-700 text-xs uppercase font-bold">Cliente</span>
@@ -654,7 +659,7 @@
                                 <i class="fa-solid fa-shield-check"></i> Autenticado
                             </span>
                         </div>
-                        <p class="text-xs text-pink-700">Gestão completa dos atendimentos, sinais de 30% e produções.</p>
+                        <p class="text-xs text-pink-700">Gestão separada de Make e Cabelo, sinais de 30% e observações internas.</p>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
@@ -688,7 +693,7 @@
                             <i class="fa-regular fa-calendar-check"></i>
                         </div>
                         <div>
-                            <span class="text-xs font-semibold text-pink-500 uppercase tracking-wider">Total Agendados</span>
+                            <span class="text-xs font-semibold text-pink-500 uppercase tracking-wider">Blocos Agendados</span>
                             <h4 class="text-2xl font-extrabold text-pink-950" x-text="adminBookings.length"></h4>
                         </div>
                     </div>
@@ -708,7 +713,7 @@
                             <i class="fa-regular fa-clock"></i>
                         </div>
                         <div>
-                            <span class="text-xs font-semibold text-pink-500 uppercase tracking-wider">Agendamentos Hoje</span>
+                            <span class="text-xs font-semibold text-pink-500 uppercase tracking-wider">Atendimentos Hoje</span>
                             <h4 class="text-2xl font-extrabold text-pink-950" x-text="todayBookingsCount()"></h4>
                         </div>
                     </div>
@@ -716,38 +721,68 @@
 
                 <!-- TABELA DE AGENDAMENTOS -->
                 <div class="bg-white rounded-3xl border border-pink-200 shadow-sm overflow-hidden">
-                    <div class="p-5 border-b border-pink-100 flex items-center justify-between gap-3 bg-pink-50/50">
-                        <h3 class="font-bold text-pink-950 text-sm sm:text-base">Agendamentos Gravados</h3>
-                        <span class="text-xs text-pink-700" x-text="`${adminBookings.length} registro(s)`"></span>
+                    <div class="p-5 border-b border-pink-100 flex flex-wrap items-center justify-between gap-3 bg-pink-50/50">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-pink-950 text-sm sm:text-base">Agendamentos Gravados</h3>
+                            <span class="text-xs text-pink-700" x-text="`(${filteredAdminBookings.length})`"></span>
+                        </div>
+
+                        <!-- FILTRO POR AGENDA -->
+                        <div class="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-pink-200 text-xs">
+                            <button 
+                                @click="adminAgendaFilter = 'all'"
+                                :class="adminAgendaFilter === 'all' ? 'bg-pink-700 text-white font-bold' : 'text-pink-800 hover:bg-pink-50'"
+                                class="px-3 py-1.5 rounded-lg transition-all">
+                                Todas
+                            </button>
+                            <button 
+                                @click="adminAgendaFilter = 'make'"
+                                :class="adminAgendaFilter === 'make' ? 'bg-pink-700 text-white font-bold' : 'text-pink-800 hover:bg-pink-50'"
+                                class="px-3 py-1.5 rounded-lg transition-all">
+                                💄 Só Make
+                            </button>
+                            <button 
+                                @click="adminAgendaFilter = 'cabelo'"
+                                :class="adminAgendaFilter === 'cabelo' ? 'bg-purple-700 text-white font-bold' : 'text-pink-800 hover:bg-pink-50'"
+                                class="px-3 py-1.5 rounded-lg transition-all">
+                                💇‍♀️ Só Cabelo
+                            </button>
+                        </div>
                     </div>
 
-                    <template x-if="adminBookings.length === 0">
+                    <template x-if="filteredAdminBookings.length === 0">
                         <div class="p-12 text-center text-pink-400">
                             <i class="fa-solid fa-calendar-xmark text-4xl mb-3 text-pink-300"></i>
-                            <p class="font-semibold text-pink-900 text-base">Nenhum agendamento encontrado.</p>
+                            <p class="font-semibold text-pink-900 text-base">Nenhum agendamento encontrado nesta visualização.</p>
                         </div>
                     </template>
 
-                    <template x-if="adminBookings.length > 0">
+                    <template x-if="filteredAdminBookings.length > 0">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
                                 <thead>
                                     <tr class="border-b border-pink-100 bg-pink-50/80 text-pink-800 uppercase tracking-wider text-[10px] font-bold">
-                                        <th class="p-4">Data & Horário</th>
+                                        <th class="p-4">Agenda & Horário</th>
                                         <th class="p-4">Cliente</th>
                                         <th class="p-4">Procedimento</th>
-                                        <th class="p-4">Duração</th>
                                         <th class="p-4">Valores & Status</th>
+                                        <th class="p-4">Obs. Interna (Privado)</th>
                                         <th class="p-4 text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-pink-100 font-medium">
-                                    <template x-for="item in adminBookings" :key="item.id">
-                                        <tr class="hover:bg-pink-50/40 transition-colors">
-                                            <!-- DATA E HORÁRIO -->
+                                    <template x-for="item in filteredAdminBookings" :key="item.id">
+                                        <tr class="hover:bg-pink-50/40 transition-colors align-top">
+                                            <!-- AGENDA, DATA E HORÁRIO -->
                                             <td class="p-4 whitespace-nowrap">
+                                                <span 
+                                                    :class="(item.agenda || 'make') === 'cabelo' ? 'bg-purple-100 text-purple-900 border-purple-300' : 'bg-pink-100 text-pink-900 border-pink-300'"
+                                                    class="inline-block mb-1 px-2 py-0.5 rounded-md text-[10px] font-extrabold border uppercase"
+                                                    x-text="(item.agenda || 'make') === 'cabelo' ? '💇‍♀️ Cabelo' : '💄 Make'">
+                                                </span>
                                                 <div class="font-bold text-pink-950" x-text="formatDateStr(item.data)"></div>
                                                 <div class="text-pink-700 font-bold text-[11px]" x-text="`⏰ ${item.horario_inicio} - ${item.horario_fim}`"></div>
+                                                <div class="text-[10px] text-pink-500" x-text="`Duração: ${item.duracao}`"></div>
                                             </td>
 
                                             <!-- CLIENTE -->
@@ -760,10 +795,7 @@
                                             </td>
 
                                             <!-- PROCEDIMENTO -->
-                                            <td class="p-4 font-bold text-pink-900" x-text="item.servico"></td>
-
-                                            <!-- DURAÇÃO -->
-                                            <td class="p-4 text-pink-800 whitespace-nowrap" x-text="item.duracao"></td>
+                                            <td class="p-4 font-bold text-pink-900 max-w-[180px]" x-text="item.servico"></td>
 
                                             <!-- VALORES (TOTAL, SINAL 30%, RESTANTE 70%) E STATUS -->
                                             <td class="p-4 whitespace-nowrap">
@@ -775,6 +807,20 @@
                                                     class="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border"
                                                     x-text="item.status || 'Aguardando Sinal'">
                                                 </span>
+                                            </td>
+
+                                            <!-- OBSERVAÇÃO INTERNA DA ADMINISTRADORA -->
+                                            <td class="p-4 min-w-[210px]">
+                                                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2">
+                                                    <p class="text-[11px] text-amber-950 whitespace-pre-line mb-1.5" 
+                                                       x-text="item.observacoes ? item.observacoes : 'Sem observações internas.'"></p>
+                                                    <button 
+                                                        @click="openObsModal(item)"
+                                                        class="text-[10px] font-bold text-pink-700 hover:text-pink-950 flex items-center gap-1 underline">
+                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                        <span x-text="item.observacoes ? 'Editar nota' : 'Adicionar nota'"></span>
+                                                    </button>
+                                                </div>
                                             </td>
 
                                             <!-- AÇÕES -->
@@ -826,6 +872,57 @@
             <p>Feito por Site_spersonalizados❤️</p>
         </div>
     </footer>
+
+
+    <!-- MODAL DE OBSERVAÇÃO INTERNA (EXCLUSIVO ADMIN) -->
+    <div x-show="isObsModalOpen" 
+         x-transition
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-pink-950/60 backdrop-blur-sm" 
+         style="display: none;">
+        
+        <div @click.away="isObsModalOpen = false" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-pink-200 relative">
+            <button @click="isObsModalOpen = false" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-pink-100 hover:bg-pink-200 text-pink-700 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-pink-950 serif-title">Observação Interna</h3>
+                    <p class="text-[11px] text-pink-700">Visível apenas para você no Painel Administrativo.</p>
+                </div>
+            </div>
+
+            <template x-if="obsEditingItem">
+                <form @submit.prevent="saveAdminObservation()" class="space-y-4 mt-4 text-xs">
+                    <div class="bg-pink-50 p-3 rounded-xl border border-pink-200 text-pink-900">
+                        <p class="font-bold" x-text="obsEditingItem.cliente_nome"></p>
+                        <p x-text="`${obsEditingItem.servico} • ${formatDateStr(obsEditingItem.data)} (${obsEditingItem.horario_inicio})`"></p>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-pink-900 mb-1.5">Anotação privada (ex: descontos, acertos, detalhes):</label>
+                        <textarea 
+                            x-model="obsTextInput" 
+                            rows="4"
+                            placeholder="Ex: Dei R$ 20,00 de desconto no valor restante; cliente vai trazer aplique..."
+                            class="w-full p-3 rounded-xl border border-pink-300 focus:border-pink-600 focus:ring-2 focus:ring-pink-500/20 outline-none text-xs"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" @click="isObsModalOpen = false" class="px-4 py-2.5 border border-pink-300 rounded-xl font-bold text-pink-800 hover:bg-pink-50">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-5 py-2.5 bg-pink-700 hover:bg-pink-800 text-white rounded-xl font-bold shadow">
+                            Salvar Observação
+                        </button>
+                    </div>
+                </form>
+            </template>
+        </div>
+    </div>
 
 
     <!-- MODAL CONFIGURAÇÃO SUPABASE -->
@@ -1044,756 +1141,890 @@
         <span x-text="toast.message"></span>
     </div>
 
-
+<script>
     <!-- ================= LÓGICA DA APLICAÇÃO (ALPINE.JS + SUPABASE) ================= -->
-    <script>
-        function supabaseBookingApp() {
-            return {
-                currentView: 'booking',
-                step: 1,
+   function supabaseBookingApp() {
+    return {
+        currentView: 'booking',
+        step: 1,
 
-                // Número do WhatsApp e Dados Pix de atendimento
-                profWhatsApp: '5517992304528',
-                pixKey: '17992304528', // Substitua pela chave Pix oficial (CPF, CNPJ, e-mail, telefone ou aleatória)
-                pixTitular: 'Bruna Felippe',
+        // Número do WhatsApp e Dados Pix de atendimento
+        profWhatsApp: '5517992304528',
+        pixKey: '17992304528',
+        pixTitular: 'Bruna Felippe',
 
-                // CREDENCIAIS SUPABASE
-                supabaseUrl: 'https://rmbpggakqpiiqhfmnivb.supabase.co/rest/v1/',
-                supabaseAnonKey: 'sb_publishable_tOFGCJMNuL5dx1fcqcOYwg_A-mSRAmG',
-                supabaseClient: null,
-                isConnectedToSupabase: false,
-                isConfigModalOpen: false,
+        // CREDENCIAIS SUPABASE
+        supabaseUrl: 'https://rmbpggakqpiiqhfmnivb.supabase.co/rest/v1/',
+        supabaseAnonKey: 'sb_publishable_tOFGCJMNuL5dx1fcqcOYwg_A-mSRAmG',
+        supabaseClient: null,
+        isConnectedToSupabase: false,
+        isConfigModalOpen: false,
 
-                sqlScript: `CREATE TABLE IF NOT EXISTS agendas_bruna (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  cliente_nome TEXT NOT NULL,
-  cliente_telefone TEXT NOT NULL,
-  servico TEXT NOT NULL,
-  duracao TEXT NOT NULL,
-  preco TEXT NOT NULL,
-  valor_sinal TEXT,
-  valor_restante TEXT,
-  status TEXT DEFAULT 'Aguardando Sinal',
-  data DATE NOT NULL,
-  horario_inicio TEXT NOT NULL,
-  horario_fim TEXT NOT NULL
-);
+        sqlScript: `ALTER TABLE agendas_bruna 
+ADD COLUMN IF NOT EXISTS agenda TEXT DEFAULT 'make',
+ADD COLUMN IF NOT EXISTS observacoes TEXT DEFAULT '';`,
 
-ALTER TABLE agendas_bruna ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Leitura Publica" ON agendas_bruna FOR SELECT USING (true);
-CREATE POLICY "Insercao Publica" ON agendas_bruna FOR INSERT WITH CHECK (true);
-CREATE POLICY "Atualizacao Publica" ON agendas_bruna FOR UPDATE USING (true);
-CREATE POLICY "Exclusao Publica" ON agendas_bruna FOR DELETE USING (true);`,
+        // PROCEDIMENTOS E TEMPOS SEPARADOS POR AGENDA (MAKE vs CABELO)
+        services: [
+            {
+                id: 1,
+                title: '1º Design de sobrancelha',
+                price: 45.00,
+                durationText: '30 min',
+                durationMinutes: 30,
+                agenda: 'make',
+                description: 'Design completo com alinhamento visagista para valorizar o olhar.'
+            },
+            {
+                id: 2,
+                title: 'Design de sobrancelha (limpeza)',
+                price: 35.00,
+                durationText: '30 min',
+                durationMinutes: 30,
+                agenda: 'make',
+                description: 'Limpeza e manutenção do desenho natural da sobrancelha.'
+            },
+            {
+                id: 3,
+                title: 'Lavagem + escova (cabelo curto e médio)',
+                price: 60.00,
+                durationText: '40 min',
+                durationMinutes: 40,
+                agenda: 'cabelo',
+                description: 'Higienização profissional acompanhada de escovação modeladora para fios curtos e médios.'
+            },
+            {
+                id: 4,
+                title: 'Lavagem + escova (cabelo longo e extra longo)',
+                price: 80.00,
+                durationText: '45 min',
+                durationMinutes: 45,
+                agenda: 'cabelo',
+                description: 'Lavagem capilar completa e escova com acabamento impecável em cabelos longos.'
+            },
+            {
+                id: 5,
+                title: 'Escova (cabelo curto e médio)',
+                price: 50.00,
+                durationText: '30 min',
+                durationMinutes: 30,
+                agenda: 'cabelo',
+                description: 'Modelagem e escovação rápida para cabelos curtos a médios.'
+            },
+            {
+                id: 6,
+                title: 'Escova (cabelo longo e extra longo)',
+                price: 70.00,
+                durationText: '35 min',
+                durationMinutes: 35,
+                agenda: 'cabelo',
+                description: 'Escovação de cabelos longos e extra longos para brilho e alinhamento.'
+            },
+            {
+                id: 7,
+                title: 'Lavagem + escova e ondas (curto/médio)',
+                price: 90.00,
+                durationText: '45 min',
+                durationMinutes: 45,
+                agenda: 'cabelo',
+                description: 'Lavagem capilar, escovação e estilização de ondas (babyliss/waves) para curtos e médios.'
+            },
+            {
+                id: 8,
+                title: 'Lavagem + escova e ondas (longo/extra longo)',
+                price: 100.00,
+                durationText: '50 min',
+                durationMinutes: 50,
+                agenda: 'cabelo',
+                description: 'Lavagem capilar completa, escovação e ondas duradouras para cabelos longos e extra longos.'
+            },
+            {
+                id: 9,
+                title: 'Escova e ondas (cabelo curto e médio)',
+                price: 70.00,
+                durationText: '35 min',
+                durationMinutes: 35,
+                agenda: 'cabelo',
+                description: 'Modelagem em ondas para cabelos curtos e médios.'
+            },
+            {
+                id: 10,
+                title: 'Escova e ondas (cabelo longo e extra longo)',
+                price: 80.00,
+                durationText: '45 min',
+                durationMinutes: 45,
+                agenda: 'cabelo',
+                description: 'Modelagem em ondas deslumbrantes para fios longos ou extra longos.'
+            },
+            {
+                id: 11,
+                title: 'Lavagem + penteado',
+                price: 160.00,
+                durationText: '1h',
+                durationMinutes: 60,
+                agenda: 'cabelo',
+                description: 'Lavagem capilar e construção de penteado personalizado para eventos.'
+            },
+            {
+                id: 12,
+                title: 'Penteado',
+                price: 140.00,
+                durationText: '50 min',
+                durationMinutes: 50,
+                agenda: 'cabelo',
+                description: 'Penteado elaborado para festas, formaturas e eventos.'
+            },
+            {
+                id: 13,
+                title: 'Make express (sem sombra)',
+                price: 140.00,
+                durationText: '45 min',
+                durationMinutes: 45,
+                agenda: 'make',
+                description: 'Uma produção leve, natural e elegante, que realça sua beleza sem excessos. Pele bem preparada, acabamento impecável e olhos sem sombra, valorizando a beleza de forma delicada e sofisticada 🤍. Perfeita para quem ama estar arrumada, mas sem parecer muito maquiada!'
+            },
+            {
+                id: 14,
+                title: 'Make social (completa)',
+                price: 180.00,
+                durationText: '1h',
+                durationMinutes: 60,
+                agenda: 'make',
+                description: 'Uma produção mais elaborada, com olhos marcados, sombras esfumadas e acabamento impecável. Ideal para quem deseja realçar o olhar, valorizar os traços e conquistar uma maquiagem elegante e marcante para ocasiões especiais. 💄'
+            },
+            {
+                id: 15,
+                title: 'Make social e penteado',
+                price: 320.00,
+                durationText: '1h 45min',
+                durationMinutes: 105,
+                agenda: 'combo',
+                makeMinutes: 60,
+                cabeloMinutes: 45,
+                description: 'Combo completo de maquiagem social refinada e penteado para brilhar na festa.'
+            },
+            {
+                id: 16,
+                title: 'Make noiva civil',
+                price: 250.00,
+                durationText: '1h',
+                durationMinutes: 60,
+                agenda: 'make',
+                description: 'Maquiagem técnica exclusiva para fotos e celebração de casamento civil.'
+            },
+            {
+                id: 17,
+                title: 'Pacote make e penteado noiva civil',
+                price: 400.00,
+                durationText: '2h',
+                durationMinutes: 120,
+                agenda: 'combo',
+                makeMinutes: 70,
+                cabeloMinutes: 50,
+                description: 'Produção completa de noiva civil (make + penteado sofisticado).'
+            },
+            {
+                id: 18,
+                title: 'Pacote Formanda',
+                price: 390.00,
+                durationText: '2h',
+                durationMinutes: 120,
+                agenda: 'combo',
+                makeMinutes: 70,
+                cabeloMinutes: 50,
+                description: 'Produção VIP, incluindo make, penteado, assessoria para troca do vestido e fotos.'
+            },
+            {
+                id: 19,
+                title: 'Make kids e dama (até 12 anos)',
+                price: 140.00,
+                durationText: '45 min',
+                durationMinutes: 45,
+                agenda: 'make',
+                description: 'Maquiagem leve, delicada e adequada para crianças e daminhas de até 12 anos.'
+            },
+            {
+                id: 20,
+                title: 'Make e penteado kids e dama (até 12 anos)',
+                price: 280.00,
+                durationText: '1h 30min',
+                durationMinutes: 90,
+                agenda: 'combo',
+                makeMinutes: 45,
+                cabeloMinutes: 45,
+                description: 'Produção completa com maquiagem delicada e penteado especial para crianças e daminhas de até 12 anos.'
+            }
+        ],
 
-                // PROCEDIMENTOS E VALORES ATUALIZADOS
-                services: [
-                    {
-                        id: 1,
-                        title: '1º Design de sobrancelha',
-                        price: 45.00,
-                        durationText: '30 min',
-                        durationMinutes: 30,
-                        description: 'Design completo com alinhamento visagista para valorizar o olhar.'
-                    },
-                    {
-                        id: 2,
-                        title: 'Design de sobrancelha (limpeza)',
-                        price: 35.00,
-                        durationText: '30 min',
-                        durationMinutes: 30,
-                        description: 'Limpeza e manutenção do desenho natural da sobrancelha.'
-                    },
-                    {
-                        id: 3,
-                        title: 'Lavagem + escova (cabelo curto e médio)',
-                        price: 60.00,
-                        durationText: '40 min',
-                        durationMinutes: 40,
-                        description: 'Higienização profissional acompanhada de escovação modeladora para fios curtos e médios.'
-                    },
-                    {
-                        id: 4,
-                        title: 'Lavagem + escova (cabelo longo e extra longo)',
-                        price: 80.00,
-                        durationText: '45 min',
-                        durationMinutes: 45,
-                        description: 'Lavagem capilar completa e escova com acabamento impecável em cabelos longos.'
-                    },
-                    {
-                        id: 5,
-                        title: 'Escova (cabelo curto e médio)',
-                        price: 50.00,
-                        durationText: '30 min',
-                        durationMinutes: 30,
-                        description: 'Modelagem e escovação rápida para cabelos curtos a médios.'
-                    },
-                    {
-                        id: 6,
-                        title: 'Escova (cabelo longo e extra longo)',
-                        price: 70.00,
-                        durationText: '35 min',
-                        durationMinutes: 35,
-                        description: 'Escovação de cabelos longos e extra longos para brilho e alinhamento.'
-                    },
-                    {
-                        id: 7,
-                        title: 'Lavagem + escova e ondas (curto/médio)',
-                        price: 90.00,
-                        durationText: '45 min',
-                        durationMinutes: 45,
-                        description: 'Lavagem capilar, escovação e estilização de ondas (babyliss/waves) para curtos e médios.'
-                    },
-                    {
-                        id: 8,
-                        title: 'Lavagem + escova e ondas (longo/extra longo)',
-                        price: 100.00,
-                        durationText: '50 min',
-                        durationMinutes: 50,
-                        description: 'Lavagem capilar completa, escovação e ondas duradouras para cabelos longos e extra longos.'
-                    },
-                    {
-                        id: 9,
-                        title: 'Escova e ondas (cabelo curto e médio)',
-                        price: 70.00,
-                        durationText: '35 min',
-                        durationMinutes: 35,
-                        description: 'Modelagem em ondas para cabelos curtos e médios.'
-                    },
-                    {
-                        id: 10,
-                        title: 'Escova e ondas (cabelo longo e extra longo)',
-                        price: 80.00,
-                        durationText: '45 min',
-                        durationMinutes: 45,
-                        description: 'Modelagem em ondas deslumbrantes para fios longos ou extra longos.'
-                    },
-                    {
-                        id: 11,
-                        title: 'Lavagem + penteado',
-                        price: 160.00,
-                        durationText: '1h',
-                        durationMinutes: 60,
-                        description: 'Lavagem capilar e construção de penteado personalizado para eventos.'
-                    },
-                    {
-                        id: 12,
-                        title: 'Penteado',
-                        price: 140.00,
-                        durationText: '50 min',
-                        durationMinutes: 50,
-                        description: 'Penteado elaborado para festas, formaturas e eventos.'
-                    },
-                    {
-                        id: 13,
-                        title: 'Make express (sem sombra)',
-                        price: 140.00,
-                        durationText: '45 min',
-                        durationMinutes: 45,
-                        description: 'Uma produção leve, natural e elegante, que realça sua beleza sem excessos. Pele bem preparada, acabamento impecável e olhos sem sombra, valorizando a beleza de forma delicada e sofisticada 🤍. Perfeita para quem ama estar arrumada, mas sem parecer muito maquiada!'
-                    },
-                    {
-                        id: 14,
-                        title: 'Make social (completa)',
-                        price: 180.00,
-                        durationText: '1h',
-                        durationMinutes: 60,
-                        description: 'Uma produção mais elaborada, com olhos marcados, sombras esfumadas e acabamento impecável. Ideal para quem deseja realçar o olhar, valorizar os traços e conquistar uma maquiagem elegante e marcante para ocasiões especiais. 💄'
-                    },
-                    {
-                        id: 15,
-                        title: 'Make social e penteado',
-                        price: 320.00,
-                        durationText: '1h 45min',
-                        durationMinutes: 105,
-                        description: 'Combo completo de maquiagem social refinada e penteado para brilhar na festa.'
-                    },
-                    {
-                        id: 16,
-                        title: 'Make noiva civil',
-                        price: 250.00,
-                        durationText: '1h',
-                        durationMinutes: 60,
-                        description: 'Maquiagem técnica exclusiva para fotos e celebração de casamento civil.'
-                    },
-                    {
-                        id: 17,
-                        title: 'Pacote make e penteado noiva civil',
-                        price: 400.00,
-                        durationText: '2h',
-                        durationMinutes: 120,
-                        description: 'Produção completa de noiva civil (make + penteado sofisticado).'
-                    },
-                    {
-                        id: 18,
-                        title: 'Pacote Formanda',
-                        price: 390.00,
-                        durationText: '2h',
-                        durationMinutes: 120,
-                        description: 'Produção VIP, incluindo make, penteado, assessoria para troca do vestido e fotos.'
-                    },
-                    {
-                        id: 19,
-                        title: 'Make kids e dama (até 12 anos)',
-                        price: 140.00,
-                        durationText: '45 min',
-                        durationMinutes: 45,
-                        description: 'Maquiagem leve, delicada e adequada para crianças e daminhas de até 12 anos.'
-                    },
-                    {
-                        id: 20,
-                        title: 'Make e penteado kids e dama (até 12 anos)',
-                        price: 280.00,
-                        durationText: '1h 30min',
-                        durationMinutes: 90,
-                        description: 'Produção completa com maquiagem delicada e penteado especial para crianças e daminhas de até 12 anos.'
-                    }
-                ],
+        // Seleções do fluxo
+        selectedService: null,
+        selectedDate: null,
+        selectedTime: null,
+        clientName: '',
+        clientPhone: '',
 
-                // Seleções do fluxo
-                selectedService: null,
-                selectedDate: null,
-                selectedTime: null,
-                clientName: '',
-                clientPhone: '',
+        // Calendário State
+        calendarYear: new Date().getFullYear(),
+        calendarMonth: new Date().getMonth(),
 
-                // Calendário State
-                calendarYear: new Date().getFullYear(),
-                calendarMonth: new Date().getMonth(),
+        // Agendamentos ocupados no dia selecionado
+        dateBookings: [],
+        isLoadingSlots: false,
+        isSubmitting: false,
 
-                // Agendamentos ocupados no dia selecionado
-                dateBookings: [],
-                isLoadingSlots: false,
-                isSubmitting: false,
+        // Admin State
+        adminBookings: [],
+        adminAgendaFilter: 'all', // 'all', 'make', 'cabelo'
 
-                // Admin State
-                adminBookings: [],
+        // Modal de Observações Admin
+        isNoteModalOpen: false,
+        editingNoteBooking: null,
+        editingNoteText: '',
 
-                // Modais & Toast
-                isDetailModalOpen: false,
-                modalService: null,
-                toast: { show: false, message: '' },
+        // Modais & Toast
+        isDetailModalOpen: false,
+        modalService: null,
+        toast: { show: false, message: '' },
 
-                // Autenticação Admin
-                isAdminAuthenticated: false,
-                isAdminAuthModalOpen: false,
-                isChangePassModalOpen: false,
-                adminPasswordInput: '',
-                showAdminPassword: false,
-                adminAuthError: '',
-                adminPassword: localStorage.getItem('beauty_admin_password') || 'admin123',
-                newPasswordInput: '',
+        // Autenticação Admin
+        isAdminAuthenticated: false,
+        isAdminAuthModalOpen: false,
+        isChangePassModalOpen: false,
+        adminPasswordInput: '',
+        showAdminPassword: false,
+        adminAuthError: '',
+        adminPassword: localStorage.getItem('beauty_admin_password') || 'admin123',
+        newPasswordInput: '',
 
-                initApp() {
-                    this.selectedService = this.services[0];
-                    
-                    const savedUrl = localStorage.getItem('beauty_supabase_url');
-                    const savedKey = localStorage.getItem('beauty_supabase_key');
-                    if (savedUrl && savedKey) {
-                        this.supabaseUrl = savedUrl;
-                        this.supabaseAnonKey = savedKey;
-                    }
+        initApp() {
+            this.selectedService = this.services[0];
+            
+            const savedUrl = localStorage.getItem('beauty_supabase_url');
+            const savedKey = localStorage.getItem('beauty_supabase_key');
+            if (savedUrl && savedKey) {
+                this.supabaseUrl = savedUrl;
+                this.supabaseAnonKey = savedKey;
+            }
 
-                    this.initSupabase();
-                },
+            this.initSupabase();
+        },
 
-                initSupabase() {
-                    const cleanUrl = (this.supabaseUrl || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-                    if (window.supabase && cleanUrl && this.supabaseAnonKey) {
-                        try {
-                            this.supabaseClient = window.supabase.createClient(cleanUrl, this.supabaseAnonKey);
-                            this.isConnectedToSupabase = true;
-                        } catch (e) {
-                            console.warn('Erro ao inicializar cliente Supabase:', e);
-                            this.isConnectedToSupabase = false;
-                        }
-                    } else {
-                        this.isConnectedToSupabase = false;
-                    }
-                },
+        initSupabase() {
+            const cleanUrl = (this.supabaseUrl || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+            if (window.supabase && cleanUrl && this.supabaseAnonKey) {
+                try {
+                    this.supabaseClient = window.supabase.createClient(cleanUrl, this.supabaseAnonKey);
+                    this.isConnectedToSupabase = true;
+                } catch (e) {
+                    console.warn('Erro ao inicializar cliente Supabase:', e);
+                    this.isConnectedToSupabase = false;
+                }
+            } else {
+                this.isConnectedToSupabase = false;
+            }
+        },
 
-                async testConnection() {
-                    if (!this.supabaseClient) this.initSupabase();
-                    try {
-                        const { data, error } = await this.supabaseClient.from('agendas_bruna').select('count').limit(1);
-                        if (error) throw error;
-                        this.isConnectedToSupabase = true;
-                        this.showToast('Conectado com sucesso ao Supabase!');
-                    } catch(e) {
-                        this.showToast('Erro ao testar conexão com a tabela agendas_bruna.');
-                    }
-                },
+        async testConnection() {
+            if (!this.supabaseClient) this.initSupabase();
+            try {
+                const { data, error } = await this.supabaseClient.from('agendas_bruna').select('count').limit(1);
+                if (error) throw error;
+                this.isConnectedToSupabase = true;
+                this.showToast('Conectado com sucesso ao Supabase!');
+            } catch(e) {
+                this.showToast('Erro ao testar conexão com a tabela agendas_bruna.');
+            }
+        },
 
-                saveSupabaseCredentials() {
-                    localStorage.setItem('beauty_supabase_url', this.supabaseUrl.trim());
-                    localStorage.setItem('beauty_supabase_key', this.supabaseAnonKey.trim());
-                    this.initSupabase();
-                    this.testConnection();
-                    this.isConfigModalOpen = false;
-                },
+        saveSupabaseCredentials() {
+            localStorage.setItem('beauty_supabase_url', this.supabaseUrl.trim());
+            localStorage.setItem('beauty_supabase_key', this.supabaseAnonKey.trim());
+            this.initSupabase();
+            this.testConnection();
+            this.isConfigModalOpen = false;
+        },
 
-                openAdminTab() {
-                    if (this.isAdminAuthenticated) {
-                        this.currentView = 'admin';
-                        this.loadAllBookings();
-                    } else {
-                        this.adminPasswordInput = '';
-                        this.adminAuthError = '';
-                        this.isAdminAuthModalOpen = true;
-                    }
-                },
+        openAdminTab() {
+            if (this.isAdminAuthenticated) {
+                this.currentView = 'admin';
+                this.loadAllBookings();
+            } else {
+                this.adminPasswordInput = '';
+                this.adminAuthError = '';
+                this.isAdminAuthModalOpen = true;
+            }
+        },
 
-                verifyAdminPassword() {
-                    if (this.adminPasswordInput === this.adminPassword) {
-                        this.isAdminAuthenticated = true;
-                        this.isAdminAuthModalOpen = false;
-                        this.adminPasswordInput = '';
-                        this.adminAuthError = '';
-                        this.currentView = 'admin';
-                        this.loadAllBookings();
-                        this.showToast('Acesso concedido ao Painel!');
-                    } else {
-                        this.adminAuthError = 'Senha incorreta. Tente novamente.';
-                    }
-                },
+        verifyAdminPassword() {
+            if (this.adminPasswordInput === this.adminPassword) {
+                this.isAdminAuthenticated = true;
+                this.isAdminAuthModalOpen = false;
+                this.adminPasswordInput = '';
+                this.adminAuthError = '';
+                this.currentView = 'admin';
+                this.loadAllBookings();
+                this.showToast('Acesso concedido ao Painel!');
+            } else {
+                this.adminAuthError = 'Senha incorreta. Tente novamente.';
+            }
+        },
 
-                logoutAdmin() {
-                    this.isAdminAuthenticated = false;
-                    this.currentView = 'booking';
-                    this.showToast('Painel bloqueado com sucesso.');
-                },
+        logoutAdmin() {
+            this.isAdminAuthenticated = false;
+            this.currentView = 'booking';
+            this.showToast('Painel bloqueado com sucesso.');
+        },
 
-                updateAdminPassword() {
-                    if (!this.newPasswordInput || this.newPasswordInput.trim().length < 4) {
-                        this.showToast('A senha deve conter pelo menos 4 caracteres.');
-                        return;
-                    }
-                    this.adminPassword = this.newPasswordInput.trim();
-                    localStorage.setItem('beauty_admin_password', this.adminPassword);
-                    this.isChangePassModalOpen = false;
-                    this.newPasswordInput = '';
-                    this.showToast('Senha do painel atualizada com sucesso!');
-                },
+        updateAdminPassword() {
+            if (!this.newPasswordInput || this.newPasswordInput.trim().length < 4) {
+                this.showToast('A senha deve conter pelo menos 4 caracteres.');
+                return;
+            }
+            this.adminPassword = this.newPasswordInput.trim();
+            localStorage.setItem('beauty_admin_password', this.adminPassword);
+            this.isChangePassModalOpen = false;
+            this.newPasswordInput = '';
+            this.showToast('Senha do painel atualizada com sucesso!');
+        },
 
-                copySqlScript() {
-                    navigator.clipboard.writeText(this.sqlScript).then(() => {
-                        this.showToast('SQL copiado para a área de transferência!');
-                    });
-                },
+        copySqlScript() {
+            navigator.clipboard.writeText(this.sqlScript).then(() => {
+                this.showToast('SQL copiado para a área de transferência!');
+            });
+        },
 
-                copyPixKey() {
-                    navigator.clipboard.writeText(this.pixKey).then(() => {
-                        this.showToast('Chave Pix copiada! Cole no aplicativo do seu banco.');
-                    });
-                },
+        copyPixKey() {
+            navigator.clipboard.writeText(this.pixKey).then(() => {
+                this.showToast('Chave Pix copiada! Cole no aplicativo do seu banco.');
+            });
+        },
 
-                showToast(msg) {
-                    this.toast.message = msg;
-                    this.toast.show = true;
-                    setTimeout(() => { this.toast.show = false; }, 3500);
-                },
+        showToast(msg) {
+            this.toast.message = msg;
+            this.toast.show = true;
+            setTimeout(() => { this.toast.show = false; }, 3500);
+        },
 
-                selectService(service) {
-                    this.selectedService = service;
-                    this.selectedTime = null;
-                },
+        selectService(service) {
+            this.selectedService = service;
+            this.selectedTime = null;
+        },
 
-                goToStep2() {
-                    if (!this.selectedService) return;
-                    this.step = 2;
-                },
+        goToStep2() {
+            if (!this.selectedService) return;
+            this.step = 2;
+        },
 
-                openModal(service) {
-                    this.modalService = service;
-                    this.isDetailModalOpen = true;
-                },
+        openModal(service) {
+            this.modalService = service;
+            this.isDetailModalOpen = true;
+        },
 
-                get currentMonthYearName() {
-                    const date = new Date(this.calendarYear, this.calendarMonth, 1);
-                    return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-                },
+        get currentMonthYearName() {
+            const date = new Date(this.calendarYear, this.calendarMonth, 1);
+            return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+        },
 
-                get calendarBlanks() {
-                    const firstDayIndex = new Date(this.calendarYear, this.calendarMonth, 1).getDay();
-                    return Array.from({ length: firstDayIndex }, (_, i) => i);
-                },
+        get calendarBlanks() {
+            const firstDayIndex = new Date(this.calendarYear, this.calendarMonth, 1).getDay();
+            return Array.from({ length: firstDayIndex }, (_, i) => i);
+        },
 
-                get calendarDays() {
-                    const daysInMonth = new Date(this.calendarYear, this.calendarMonth + 1, 0).getDate();
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
+        get calendarDays() {
+            const daysInMonth = new Date(this.calendarYear, this.calendarMonth + 1, 0).getDate();
+            const today = new Date();
+            today.setHours(0,0,0,0);
 
-                    const days = [];
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dateObj = new Date(this.calendarYear, this.calendarMonth, day);
-                        const dateStr = dateObj.toISOString().split('T')[0];
-                        const dayOfWeek = dateObj.getDay(); // 0 = Dom, 1 = Seg, 5 = Sex, 6 = Sáb
-                        
-                        const isSunday = dayOfWeek === 0;
-                        const isMonToThu = dayOfWeek >= 1 && dayOfWeek <= 4;
-                        const isPast = dateObj < today;
-                        
-                        // Segunda a quinta a agenda fica fechada.
-                        // Sexta (5), Sábado (6) e Domingo (0) ficam abertos.
-                        const isDisabled = isPast || isMonToThu;
-                        const isToday = dateObj.getTime() === today.getTime();
+            const days = [];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateObj = new Date(this.calendarYear, this.calendarMonth, day);
+                const dateStr = dateObj.toISOString().split('T')[0];
+                const dayOfWeek = dateObj.getDay();
+                
+                const isSunday = dayOfWeek === 0;
+                const isMonToThu = dayOfWeek >= 1 && dayOfWeek <= 4;
+                const isPast = dateObj < today;
+                
+                const isDisabled = isPast || isMonToThu;
+                const isToday = dateObj.getTime() === today.getTime();
 
-                        days.push({
-                            dayNumber: day,
-                            dateStr: dateStr,
-                            dayOfWeek: dayOfWeek,
-                            isDisabled: isDisabled,
-                            isSunday: isSunday,
-                            isToday: isToday
-                        });
-                    }
-                    return days;
-                },
+                days.push({
+                    dayNumber: day,
+                    dateStr: dateStr,
+                    dayOfWeek: dayOfWeek,
+                    isDisabled: isDisabled,
+                    isSunday: isSunday,
+                    isToday: isToday
+                });
+            }
+            return days;
+        },
 
-                get hasExtraTax() {
-                    if (!this.selectedDate) return false;
-                    const dateObj = new Date(this.selectedDate + 'T00:00:00');
-                    const dayOfWeek = dateObj.getDay();
-                    // Domingo possui taxa extra de 15%
-                    return dayOfWeek === 0;
-                },
+        get hasExtraTax() {
+            if (!this.selectedDate) return false;
+            const dateObj = new Date(this.selectedDate + 'T00:00:00');
+            return dateObj.getDay() === 0;
+        },
 
-                calculateFinalPrice() {
-                    if (!this.selectedService) return 0;
-                    let price = this.selectedService.price;
-                    if (this.hasExtraTax) {
-                        price *= 1.15; // Adiciona 15% de taxa
-                    }
-                    return price;
-                },
+        calculateFinalPrice() {
+            if (!this.selectedService) return 0;
+            let price = this.selectedService.price;
+            if (this.hasExtraTax) {
+                price *= 1.15;
+            }
+            return price;
+        },
 
-                calculateDeposit() {
-                    return this.calculateFinalPrice() * 0.30;
-                },
+        calculateDeposit() {
+            return this.calculateFinalPrice() * 0.30;
+        },
 
-                calculateRemaining() {
-                    return this.calculateFinalPrice() * 0.70;
-                },
+        calculateRemaining() {
+            return this.calculateFinalPrice() * 0.70;
+        },
 
-                get availableSlots() {
-                    if (!this.selectedDate) return [];
-                    const dateObj = new Date(this.selectedDate + 'T00:00:00');
-                    const dayOfWeek = dateObj.getDay();
+        get availableSlots() {
+            if (!this.selectedDate) return [];
+            const dateObj = new Date(this.selectedDate + 'T00:00:00');
+            const dayOfWeek = dateObj.getDay();
 
-                    // Sexta: 09h às 19h
-                    // Sábado: 07h às 19h
-                    // Domingo: Horários de produção (08h às 18h)
-                    let startHour = 9;
-                    let endHour = 18; // último slot começa às 18:00
+            let startHour = 9;
+            let endHour = 18;
 
-                    if (dayOfWeek === 6) { // Sábado
-                        startHour = 7;
-                    } else if (dayOfWeek === 0) { // Domingo
-                        startHour = 8;
-                    }
+            if (dayOfWeek === 6) {
+                startHour = 7;
+            } else if (dayOfWeek === 0) {
+                startHour = 8;
+            }
 
-                    const slots = [];
-                    for (let h = startHour; h <= endHour; h++) {
-                        const hStr = h.toString().padStart(2, '0');
-                        slots.push(`${hStr}:00`);
-                        if (h !== endHour) {
-                            slots.push(`${hStr}:30`);
-                        }
-                    }
-                    return slots;
-                },
+            const slots = [];
+            for (let h = startHour; h <= endHour; h++) {
+                const hStr = h.toString().padStart(2, '0');
+                slots.push(`${hStr}:00`);
+                if (h !== endHour) {
+                    slots.push(`${hStr}:30`);
+                }
+            }
+            return slots;
+        },
 
-                prevMonth() {
-                    if (this.calendarMonth === 0) {
-                        this.calendarMonth = 11;
-                        this.calendarYear--;
-                    } else {
-                        this.calendarMonth--;
-                    }
-                },
+        prevMonth() {
+            if (this.calendarMonth === 0) {
+                this.calendarMonth = 11;
+                this.calendarYear--;
+            } else {
+                this.calendarMonth--;
+            }
+        },
 
-                nextMonth() {
-                    if (this.calendarMonth === 11) {
-                        this.calendarMonth = 0;
-                        this.calendarYear++;
-                    } else {
-                        this.calendarMonth++;
-                    }
-                },
+        nextMonth() {
+            if (this.calendarMonth === 11) {
+                this.calendarMonth = 0;
+                this.calendarYear++;
+            } else {
+                this.calendarMonth++;
+            }
+        },
 
-                async onSelectDate(dayObj) {
-                    if (dayObj.isDisabled) return;
-                    this.selectedDate = dayObj.dateStr;
-                    this.selectedTime = null;
-                    await this.fetchBookingsForDate(this.selectedDate);
-                },
+        async onSelectDate(dayObj) {
+            if (dayObj.isDisabled) return;
+            this.selectedDate = dayObj.dateStr;
+            this.selectedTime = null;
+            await this.fetchBookingsForDate(this.selectedDate);
+        },
 
-                get selectedDateFormatted() {
-                    if (!this.selectedDate) return '';
-                    const parts = this.selectedDate.split('-');
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-                },
+        get selectedDateFormatted() {
+            if (!this.selectedDate) return '';
+            const parts = this.selectedDate.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        },
 
-                timeToMinutes(timeStr) {
-                    if (!timeStr) return 0;
-                    const [h, m] = timeStr.split(':').map(Number);
-                    return h * 60 + m;
-                },
+        timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [h, m] = timeStr.split(':').map(Number);
+            return h * 60 + m;
+        },
 
-                minutesToTime(mins) {
-                    const h = Math.floor(mins / 60).toString().padStart(2, '0');
-                    const m = (mins % 60).toString().padStart(2, '0');
-                    return `${h}:${m}`;
-                },
+        minutesToTime(mins) {
+            const h = Math.floor(mins / 60).toString().padStart(2, '0');
+            const m = (mins % 60).toString().padStart(2, '0');
+            return `${h}:${m}`;
+        },
 
-                calculateEndTime(startTimeStr, durationMinutes) {
-                    if (!startTimeStr || !durationMinutes) return '';
-                    const startMins = this.timeToMinutes(startTimeStr);
-                    const endMins = startMins + Number(durationMinutes);
-                    return this.minutesToTime(endMins);
-                },
+        formatDurationFromMins(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            if (h > 0 && m > 0) return `${h}h ${m}min`;
+            if (h > 0) return `${h}h`;
+            return `${m} min`;
+        },
 
-                get sortedDateBookings() {
-                    return [...this.dateBookings].sort((x, y) => this.timeToMinutes(x.horario_inicio) - this.timeToMinutes(y.horario_inicio));
-                },
+        calculateEndTime(startTimeStr, durationMinutes) {
+            if (!startTimeStr || !durationMinutes) return '';
+            const startMins = this.timeToMinutes(startTimeStr);
+            const endMins = startMins + Number(durationMinutes);
+            return this.minutesToTime(endMins);
+        },
 
-                getSlotStatus(slotStr) {
-                    if (!this.selectedService) return { available: false, reason: 'Selecione serviço' };
+        // Verifica se um intervalo está livre em uma lista específica de agendamentos
+        isRangeFree(bookingsList, startMins, endMins) {
+            for (let b of bookingsList) {
+                const bStart = this.timeToMinutes(b.horario_inicio);
+                const bEnd = this.timeToMinutes(b.horario_fim);
+                if (startMins < bEnd && endMins > bStart) {
+                    return false;
+                }
+            }
+            return true;
+        },
 
-                    const candidateStart = this.timeToMinutes(slotStr);
-                    const duration = Number(this.selectedService.durationMinutes);
-                    const candidateEnd = candidateStart + duration;
+        // Resolve automaticamente o encaixe nas agendas de Make e Cabelo
+        getSlotStatus(slotStr) {
+            if (!this.selectedService) return { available: false, reason: 'Selecione serviço' };
 
-                    // Impede que o procedimento ultrapasse o horário de fechamento
-                    const dateObj = new Date(this.selectedDate + 'T00:00:00');
-                    const dayOfWeek = dateObj.getDay();
-                    const closingMinutes = dayOfWeek === 0 ? 18 * 60 : 19 * 60;
+            const start = this.timeToMinutes(slotStr);
+            const dateObj = new Date(this.selectedDate + 'T00:00:00');
+            const closingMinutes = dateObj.getDay() === 0 ? 18 * 60 : 19 * 60;
 
-                    if (candidateEnd > closingMinutes) {
-                        return { available: false, reason: 'Sem tempo' };
-                    }
+            const makeBookings = this.dateBookings.filter(b => (b.agenda || 'make') === 'make');
+            const cabeloBookings = this.dateBookings.filter(b => b.agenda === 'cabelo');
 
-                    for (let booking of this.dateBookings) {
-                        const bStart = this.timeToMinutes(booking.horario_inicio);
-                        const bEnd = this.timeToMinutes(booking.horario_fim);
+            const srv = this.selectedService;
 
-                        if (candidateStart < bEnd && candidateEnd > bStart) {
-                            // Começa dentro de uma reserva = Ocupado.
-                            // Começa livre mas invade uma reserva seguinte = Sem tempo.
-                            const startsInside = candidateStart >= bStart;
-                            return { available: false, reason: startsInside ? 'Ocupado' : 'Sem tempo' };
-                        }
-                    }
+            // 1. Somente Make
+            if (srv.agenda === 'make') {
+                const end = start + Number(srv.durationMinutes);
+                if (end > closingMinutes) return { available: false, reason: 'Sem tempo' };
+                const free = this.isRangeFree(makeBookings, start, end);
+                return free 
+                    ? { available: true, reason: `até ${this.minutesToTime(end)}`, blocks: [{ agenda: 'make', start, end }] }
+                    : { available: false, reason: 'Ocupado' };
+            }
 
-                    return { available: true, reason: `até ${this.minutesToTime(candidateEnd)}` };
-                },
+            // 2. Somente Cabelo
+            if (srv.agenda === 'cabelo') {
+                const end = start + Number(srv.durationMinutes);
+                if (end > closingMinutes) return { available: false, reason: 'Sem tempo' };
+                const free = this.isRangeFree(cabeloBookings, start, end);
+                return free 
+                    ? { available: true, reason: `até ${this.minutesToTime(end)}`, blocks: [{ agenda: 'cabelo', start, end }] }
+                    : { available: false, reason: 'Ocupado' };
+            }
 
-                async fetchBookingsForDate(dateStr) {
-                    this.isLoadingSlots = true;
-                    if (this.isConnectedToSupabase && this.supabaseClient) {
-                        try {
-                            const { data, error } = await this.supabaseClient
-                                .from('agendas_bruna')
-                                .select('*')
-                                .eq('data', dateStr);
+            // 3. Combo (Make + Cabelo) - Testa automático sem a cliente precisar escolher ordem
+            if (srv.agenda === 'combo') {
+                const mDur = Number(srv.makeMinutes);
+                const cDur = Number(srv.cabeloMinutes);
+                const totalEnd = start + mDur + cDur;
 
-                            if (error) throw error;
-                            this.dateBookings = data || [];
-                        } catch (e) {
-                            console.error('Erro ao consultar Supabase:', e);
-                            this.fetchLocalBookingsForDate(dateStr);
-                        }
-                    } else {
-                        this.fetchLocalBookingsForDate(dateStr);
-                    }
-                    this.isLoadingSlots = false;
-                },
+                if (totalEnd > closingMinutes) return { available: false, reason: 'Sem tempo' };
 
-                fetchLocalBookingsForDate(dateStr) {
-                    const local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
-                    this.dateBookings = local.filter(b => b.data === dateStr);
-                },
-
-                async loadAllBookings() {
-                    if (this.isConnectedToSupabase && this.supabaseClient) {
-                        try {
-                            const { data, error } = await this.supabaseClient
-                                .from('agendas_bruna')
-                                .select('*')
-                                .order('data', { ascending: false });
-
-                            if (error) throw error;
-                            this.adminBookings = data || [];
-                            return;
-                        } catch (e) {
-                            console.error('Erro ao listar Supabase:', e);
-                        }
-                    }
-                    
-                    const local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
-                    this.adminBookings = local;
-                },
-
-                async saveBookingAndRedirectWhatsApp() {
-                    this.isSubmitting = true;
-
-                    const durationMins = Number(this.selectedService.durationMinutes);
-                    const endTimeStr = this.calculateEndTime(this.selectedTime, durationMins);
-                    const finalPrice = this.calculateFinalPrice();
-                    const depositPrice = this.calculateDeposit();
-                    const remainingPrice = this.calculateRemaining();
-
-                    const precoFormatted = this.formatCurrency(finalPrice);
-                    const sinalFormatted = this.formatCurrency(depositPrice);
-                    const restanteFormatted = this.formatCurrency(remainingPrice);
-
-                    const bookingPayload = {
-                        cliente_nome: this.clientName.trim(),
-                        cliente_telefone: this.clientPhone.trim(),
-                        servico: this.selectedService.title,
-                        duracao: this.selectedService.durationText,
-                        preco: precoFormatted,
-                        valor_sinal: sinalFormatted,
-                        valor_restante: restanteFormatted,
-                        status: 'Aguardando Sinal',
-                        data: this.selectedDate,
-                        horario_inicio: this.selectedTime,
-                        horario_fim: endTimeStr
+                // Prioridade 1: Cabelo primeiro, depois Make
+                const cabeloEnd1 = start + cDur;
+                if (this.isRangeFree(cabeloBookings, start, cabeloEnd1) && this.isRangeFree(makeBookings, cabeloEnd1, totalEnd)) {
+                    return {
+                        available: true,
+                        reason: `até ${this.minutesToTime(totalEnd)}`,
+                        blocks: [
+                            { agenda: 'cabelo', start: start, end: cabeloEnd1 },
+                            { agenda: 'make', start: cabeloEnd1, end: totalEnd }
+                        ]
                     };
+                }
 
-                    if (this.isConnectedToSupabase && this.supabaseClient) {
-                        try {
-                            const { error } = await this.supabaseClient
-                                .from('agendas_bruna')
-                                .insert([bookingPayload]);
+                // Prioridade 2: Make primeiro, depois Cabelo
+                const makeEnd2 = start + mDur;
+                if (this.isRangeFree(makeBookings, start, makeEnd2) && this.isRangeFree(cabeloBookings, makeEnd2, totalEnd)) {
+                    return {
+                        available: true,
+                        reason: `até ${this.minutesToTime(totalEnd)}`,
+                        blocks: [
+                            { agenda: 'make', start: start, end: makeEnd2 },
+                            { agenda: 'cabelo', start: makeEnd2, end: totalEnd }
+                        ]
+                    };
+                }
 
-                            if (error) throw error;
-                        } catch (e) {
-                            console.error('Erro ao inserir no Supabase, salvando local:', e);
-                        }
-                    }
+                return { available: false, reason: 'Ocupado' };
+            }
 
-                    const localBookings = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
-                    localBookings.push({ id: Date.now(), ...bookingPayload });
-                    localStorage.setItem('beauty_local_bookings', JSON.stringify(localBookings));
+            return { available: false, reason: 'Indisponível' };
+        },
 
-                    this.isSubmitting = false;
+        async fetchBookingsForDate(dateStr) {
+            this.isLoadingSlots = true;
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { data, error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .select('*')
+                        .eq('data', dateStr);
 
-                    const taxMsg = this.hasExtraTax ? '\n⚡ *Observação:* Inclui taxa de 15% (Domingo/Feriado/Fora de Horário).' : '';
+                    if (error) throw error;
+                    this.dateBookings = data || [];
+                } catch (e) {
+                    console.error('Erro ao consultar Supabase:', e);
+                    this.fetchLocalBookingsForDate(dateStr);
+                }
+            } else {
+                this.fetchLocalBookingsForDate(dateStr);
+            }
+            this.isLoadingSlots = false;
+        },
 
-                    const msg = 
+        fetchLocalBookingsForDate(dateStr) {
+            const local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            this.dateBookings = local.filter(b => b.data === dateStr);
+        },
+
+        async loadAllBookings() {
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { data, error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .select('*')
+                        .order('data', { ascending: false })
+                        .order('horario_inicio', { ascending: true });
+
+                    if (error) throw error;
+                    this.adminBookings = data || [];
+                    return;
+                } catch (e) {
+                    console.error('Erro ao listar Supabase:', e);
+                }
+            }
+            
+            const local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            this.adminBookings = local;
+        },
+
+        get filteredAdminBookings() {
+            if (this.adminAgendaFilter === 'all') return this.adminBookings;
+            return this.adminBookings.filter(b => (b.agenda || 'make') === this.adminAgendaFilter);
+        },
+
+        async saveBookingAndRedirectWhatsApp() {
+            this.isSubmitting = true;
+
+            const slotPlan = this.getSlotStatus(this.selectedTime);
+            if (!slotPlan.available || !slotPlan.blocks) {
+                this.isSubmitting = false;
+                this.showToast('Este horário acabou de ser ocupado. Escolha outro.');
+                this.step = 2;
+                return;
+            }
+
+            const durationMins = Number(this.selectedService.durationMinutes);
+            const endTimeStr = this.calculateEndTime(this.selectedTime, durationMins);
+            const finalPrice = this.calculateFinalPrice();
+            const depositPrice = this.calculateDeposit();
+            const remainingPrice = this.calculateRemaining();
+
+            const precoFormatted = this.formatCurrency(finalPrice);
+            const sinalFormatted = this.formatCurrency(depositPrice);
+            const restanteFormatted = this.formatCurrency(remainingPrice);
+
+            // Cria 1 registro para serviço único, ou 2 registros separados (Make e Cabelo) para combos
+            const payloads = slotPlan.blocks.map((blk, idx) => {
+                const blockDurationMins = blk.end - blk.start;
+                const isCombo = slotPlan.blocks.length > 1;
+                const labelParte = isCombo 
+                    ? `${this.selectedService.title} (${blk.agenda === 'cabelo' ? 'Parte Cabelo' : 'Parte Make'})`
+                    : this.selectedService.title;
+
+                return {
+                    cliente_nome: this.clientName.trim(),
+                    cliente_telefone: this.clientPhone.trim(),
+                    servico: labelParte,
+                    duracao: this.formatDurationFromMins(blockDurationMins),
+                    preco: idx === 0 ? precoFormatted : 'Incluso no Combo',
+                    valor_sinal: idx === 0 ? sinalFormatted : '-',
+                    valor_restante: idx === 0 ? restanteFormatted : '-',
+                    status: 'Aguardando Sinal',
+                    agenda: blk.agenda,
+                    observacoes: '',
+                    data: this.selectedDate,
+                    horario_inicio: this.minutesToTime(blk.start),
+                    horario_fim: this.minutesToTime(blk.end)
+                };
+            });
+
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .insert(payloads);
+
+                    if (error) throw error;
+                } catch (e) {
+                    console.error('Erro ao inserir no Supabase, salvando local:', e);
+                }
+            }
+
+            const localBookings = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            payloads.forEach((p, idx) => {
+                localBookings.push({ id: Date.now() + idx, ...p });
+            });
+            localStorage.setItem('beauty_local_bookings', JSON.stringify(localBookings));
+
+            this.isSubmitting = false;
+
+            const taxMsg = this.hasExtraTax ? '\n⚡ *Observação:* Inclui taxa de 15% (Domingo/Feriado/Fora de Horário).' : '';
+            
+            let cronogramaMsg = '';
+            if (slotPlan.blocks.length > 1) {
+                const linhas = slotPlan.blocks.map(b => 
+                    `   • ${b.agenda === 'cabelo' ? '💇‍♀️ Cabelo' : '💄 Make'}: ${this.minutesToTime(b.start)} às ${this.minutesToTime(b.end)}`
+                ).join('\n');
+                cronogramaMsg = `\n📋 *Ordem do Atendimento:*\n${linhas}\n`;
+            }
+
+            const msg = 
 `✨ *PRÉ-RESERVA REALIZADA - Studio Bruna Felippe* ✨
 
-💄 *Procedimento:* ${bookingPayload.servico}
-⏱️ *Duração:* ${bookingPayload.duracao} (${bookingPayload.horario_inicio} até ${bookingPayload.horario_fim})
-📅 *Data:* ${this.selectedDateFormatted}
-
+💄 *Procedimento:* ${this.selectedService.title}
+⏱️ *Horário Total:* ${this.selectedService.durationText} (${this.selectedTime} até ${endTimeStr})
+📅 *Data:* ${this.selectedDateFormatted}${cronogramaMsg}
 💰 *Valor Total:* ${precoFormatted}
 ✅ *Sinal (30%):* ${sinalFormatted}
 ⏳ *Restante no dia (70%):* ${restanteFormatted}${taxMsg}
 
-👤 *Cliente:* ${bookingPayload.cliente_nome}
-📱 *WhatsApp:* ${bookingPayload.cliente_telefone}
+👤 *Cliente:* ${this.clientName.trim()}
+📱 *WhatsApp:* ${this.clientPhone.trim()}
 
 📎 *Estou enviando o comprovante do Pix de 30% abaixo para confirmar meu horário!* 💖`;
 
-                    const whatsappUrl = `https://wa.me/${this.profWhatsApp}?text=${encodeURIComponent(msg)}`;
+            const whatsappUrl = `https://wa.me/${this.profWhatsApp}?text=${encodeURIComponent(msg)}`;
 
-                    this.showToast('Pré-reserva salva! Envie o comprovante no WhatsApp.');
+            this.showToast('Pré-reserva salva! Envie o comprovante no WhatsApp.');
 
-                    setTimeout(() => {
-                        window.location.href = whatsappUrl;
-                        this.step = 1;
-                        this.selectedTime = null;
-                        this.clientName = '';
-                        this.clientPhone = '';
-                    }, 600);
-                },
+            setTimeout(() => {
+                window.location.href = whatsappUrl;
+                this.step = 1;
+                this.selectedTime = null;
+                this.clientName = '';
+                this.clientPhone = '';
+            }, 600);
+        },
 
-                async confirmDeposit(id) {
-                    if (this.isConnectedToSupabase && this.supabaseClient) {
-                        try {
-                            const { error } = await this.supabaseClient
-                                .from('agendas_bruna')
-                                .update({ status: 'Sinal Pago (Confirmado)' })
-                                .eq('id', id);
+        openNoteModal(item) {
+            this.editingNoteBooking = item;
+            this.editingNoteText = item.observacoes || '';
+            this.isNoteModalOpen = true;
+        },
 
-                            if (!error) this.showToast('Pagamento de 30% confirmado!');
-                        } catch (e) {
-                            console.error('Erro ao atualizar status no Supabase:', e);
-                        }
-                    }
+        async saveAdminNote() {
+            if (!this.editingNoteBooking) return;
+            const id = this.editingNoteBooking.id;
+            const novaObs = this.editingNoteText.trim();
 
-                    let local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
-                    local = local.map(b => b.id === id ? { ...b, status: 'Sinal Pago (Confirmado)' } : b);
-                    localStorage.setItem('beauty_local_bookings', JSON.stringify(local));
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .update({ observacoes: novaObs })
+                        .eq('id', id);
 
-                    this.loadAllBookings();
-                },
-
-                async deleteBooking(id) {
-                    if (this.isConnectedToSupabase && this.supabaseClient) {
-                        try {
-                            const { error } = await this.supabaseClient
-                                .from('agendas_bruna')
-                                .delete()
-                                .eq('id', id);
-
-                            if (!error) this.showToast('Registro excluído do banco!');
-                        } catch (e) {
-                            console.error('Erro ao excluir do Supabase:', e);
-                        }
-                    }
-
-                    let local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
-                    local = local.filter(b => b.id !== id);
-                    localStorage.setItem('beauty_local_bookings', JSON.stringify(local));
-
-                    this.loadAllBookings();
-                },
-
-                calculateTotalRevenue() {
-                    return this.adminBookings.reduce((sum, item) => {
-                        const num = parseFloat((item.preco || '').replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
-                        return sum + num;
-                    }, 0);
-                },
-
-                todayBookingsCount() {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    return this.adminBookings.filter(b => b.data === todayStr).length;
-                },
-
-                formatPhoneInput(event) {
-                    let val = event.target.value.replace(/\D/g, '');
-                    if (val.length > 11) val = val.slice(0, 11);
-                    if (val.length > 10) {
-                        val = val.replace(/^(\d\d)(\d{5})(\d{4}).*/, '($1) $2-$3');
-                    } else if (val.length > 6) {
-                        val = val.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, '($1) $2-$3');
-                    } else if (val.length > 2) {
-                        val = val.replace(/^(\d\d)(\d{0,5})/, '($1) $2');
-                    } else if (val.length > 0) {
-                        val = val.replace(/^(\d*)/, '($1');
-                    }
-                    this.clientPhone = val;
-                },
-
-                cleanPhone(phone) {
-                    return (phone || '').replace(/\D/g, '');
-                },
-
-                formatCurrency(val) {
-                    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-                },
-
-                formatDateStr(dateIso) {
-                    if (!dateIso) return '';
-                    const parts = dateIso.split('-');
-                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                    if (!error) this.showToast('Observação privada salva!');
+                } catch (e) {
+                    console.error('Erro ao salvar observação no Supabase:', e);
                 }
             }
+
+            let local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            local = local.map(b => b.id === id ? { ...b, observacoes: novaObs } : b);
+            localStorage.setItem('beauty_local_bookings', JSON.stringify(local));
+
+            this.isNoteModalOpen = false;
+            this.editingNoteBooking = null;
+            this.loadAllBookings();
+        },
+
+        async confirmDeposit(id) {
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .update({ status: 'Sinal Pago (Confirmado)' })
+                        .eq('id', id);
+
+                    if (!error) this.showToast('Pagamento de 30% confirmado!');
+                } catch (e) {
+                    console.error('Erro ao atualizar status no Supabase:', e);
+                }
+            }
+
+            let local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            local = local.map(b => b.id === id ? { ...b, status: 'Sinal Pago (Confirmado)' } : b);
+            localStorage.setItem('beauty_local_bookings', JSON.stringify(local));
+
+            this.loadAllBookings();
+        },
+
+        async deleteBooking(id) {
+            if (this.isConnectedToSupabase && this.supabaseClient) {
+                try {
+                    const { error } = await this.supabaseClient
+                        .from('agendas_bruna')
+                        .delete()
+                        .eq('id', id);
+
+                    if (!error) this.showToast('Registro excluído do banco!');
+                } catch (e) {
+                    console.error('Erro ao excluir do Supabase:', e);
+                }
+            }
+
+            let local = JSON.parse(localStorage.getItem('beauty_local_bookings') || '[]');
+            local = local.filter(b => b.id !== id);
+            localStorage.setItem('beauty_local_bookings', JSON.stringify(local));
+
+            this.loadAllBookings();
+        },
+
+        calculateTotalRevenue() {
+            return this.adminBookings.reduce((sum, item) => {
+                if (!item.preco || item.preco === 'Incluso no Combo') return sum;
+                const num = parseFloat(item.preco.replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+                return sum + num;
+            }, 0);
+        },
+
+        todayBookingsCount() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            return this.filteredAdminBookings.filter(b => b.data === todayStr).length;
+        },
+
+        formatPhoneInput(event) {
+            let val = event.target.value.replace(/\D/g, '');
+            if (val.length > 11) val = val.slice(0, 11);
+            if (val.length > 10) {
+                val = val.replace(/^(\d\d)(\d{5})(\d{4}).*/, '($1) $2-$3');
+            } else if (val.length > 6) {
+                val = val.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, '($1) $2-$3');
+            } else if (val.length > 2) {
+                val = val.replace(/^(\d\d)(\d{0,5})/, '($1) $2');
+            } else if (val.length > 0) {
+                val = val.replace(/^(\d*)/, '($1');
+            }
+            this.clientPhone = val;
+        },
+
+        cleanPhone(phone) {
+            return (phone || '').replace(/\D/g, '');
+        },
+
+        formatCurrency(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+        },
+
+        formatDateStr(dateIso) {
+            if (!dateIso) return '';
+            const parts = dateIso.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-    </script>
+    }
+}
+</script>
 </body>
 </html>
